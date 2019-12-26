@@ -30,3 +30,8 @@ if __name__ == '__main__':
     print(part1())
     print("---")
     print(part2())
+
+"""
+<Instruction <Opcode.ADD: 1> Mode [<ParamMode.Positon: 0>, <ParamMode.Positon: 0>, <ParamMode.Positon: 0>]>
+[135, 6, 0] [4138656, 2, 1]
+"""
