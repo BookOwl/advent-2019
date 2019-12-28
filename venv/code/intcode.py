@@ -9,13 +9,14 @@ class Opcode(IntEnum):
     JF = 6
     LT = 7
     EQ = 8
+    REL = 9
     HALT = 99
     def num_args(self):
         if self.value in (Opcode.ADD, Opcode.MUL, Opcode.LT, Opcode.EQ):
             return 3
         elif self.value in (Opcode.JT, Opcode.JF):
             return 2
-        elif self.value in (Opcode.HALT, Opcode.INPUT, Opcode.OUTPUT):
+        elif self.value in (Opcode.HALT, Opcode.INPUT, Opcode.OUTPUT, Opcode.REL):
             return 1
         else:
             raise InvalidInstruction
@@ -23,6 +24,7 @@ class Opcode(IntEnum):
 class ParamMode(IntEnum):
     Positon = 0
     Immediate = 1
+    Relative = 2
 
 class Instruction:
     def __init__(self, x):
@@ -46,21 +48,38 @@ class Computer:
 
     def load_program(self, program):
         self.memory = [int(cell.strip()) for cell in program.split(",")]
+        self.mem_len = len(self.memory)
+        self.rel_base = 0
         self.ip = 0
         self.done = False
         self.outputting = False
 
-    def set_io(self, in_, out):
+    def set_io(self, in_ = None, out = None):
         self.in_ = in_ or input
         self.out = out or print
 
     def value_of(self, addr, mode):
         if mode == ParamMode.Positon:
+            if addr >= self.mem_len:
+                self.memory += [0] * ((addr - self.mem_len) * 2)
+                self.mem_len = len(self.memory)
+            return self.memory[addr]
+        elif mode == ParamMode.Relative:
+            addr = addr + self.rel_base
+            if addr >= self.mem_len:
+                self.memory += [0] * ((addr - self.mem_len) * 2)
+                self.mem_len = len(self.memory)
             return self.memory[addr]
         else:
             return addr
 
     def write(self, addr, value):
+        addr, mode = addr
+        if mode == ParamMode.Relative:
+            addr += self.rel_base
+        if addr >= self.mem_len:
+            self.memory += [0] * ((addr - self.mem_len) * 2)
+            self.mem_len = len(self.memory)
         self.memory[addr] = value
 
     def get_params(self, i):
@@ -73,16 +92,19 @@ class Computer:
         #print(list(self.get_params(i)))
         if i.op == Opcode.ADD:
             a, b, dest = self.get_params(i)
-            self.write(dest[0], self.value_of(*a) + self.value_of(*b))
+            self.write(dest, self.value_of(*a) + self.value_of(*b))
         elif i.op == Opcode.MUL:
             a, b, dest = self.get_params(i)
-            self.write(dest[0], self.value_of(*a) * self.value_of(*b))
+            self.write(dest, self.value_of(*a) * self.value_of(*b))
         elif i.op == Opcode.LT:
             a, b, dest = self.get_params(i)
-            self.write(dest[0], int(self.value_of(*a) < self.value_of(*b)))
+            self.write(dest, int(self.value_of(*a) < self.value_of(*b)))
         elif i.op == Opcode.EQ:
             a, b, dest = self.get_params(i)
-            self.write(dest[0], int(self.value_of(*a) == self.value_of(*b)))
+            self.write(dest, int(self.value_of(*a) == self.value_of(*b)))
+        elif i.op == Opcode.REL:
+            a = next(self.get_params(i))
+            self.rel_base += self.value_of(*a)
         elif i.op == Opcode.JF:
             a, target = self.get_params(i)
             if self.value_of(*a) == 0:
@@ -95,7 +117,7 @@ class Computer:
                 return
         elif i.op == Opcode.INPUT:
             dest, *_ = self.get_params(i)
-            self.write(dest[0], int(self.in_("> ")))
+            self.write(dest, int(self.in_("> ")))
         elif i.op == Opcode.OUTPUT:
             a, *_ = self.get_params(i)
             self.outputting = True
