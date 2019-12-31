@@ -58,17 +58,19 @@ class Computer:
         self.in_ = in_ or input
         self.out = out or print
 
+    def expand_memory(self, amount):
+        self.memory += [0] * ((amount + 1) * 4)
+        self.mem_len = len(self.memory)
+
     def value_of(self, addr, mode):
         if mode == ParamMode.Positon:
             if addr >= self.mem_len:
-                self.memory += [0] * ((addr - self.mem_len) * 2)
-                self.mem_len = len(self.memory)
+                self.expand_memory(addr - self.mem_len)
             return self.memory[addr]
         elif mode == ParamMode.Relative:
             addr = addr + self.rel_base
             if addr >= self.mem_len:
-                self.memory += [0] * ((addr - self.mem_len) * 2)
-                self.mem_len = len(self.memory)
+                self.expand_memory(addr - self.mem_len)
             return self.memory[addr]
         else:
             return addr
@@ -78,8 +80,7 @@ class Computer:
         if mode == ParamMode.Relative:
             addr += self.rel_base
         if addr >= self.mem_len:
-            self.memory += [0] * ((addr - self.mem_len) * 2)
-            self.mem_len = len(self.memory)
+            self.expand_memory(addr - self.mem_len)
         self.memory[addr] = value
 
     def get_params(self, i):
