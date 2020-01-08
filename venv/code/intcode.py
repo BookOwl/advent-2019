@@ -150,3 +150,13 @@ def write_to_list(lst):
     def write(x):
         lst.append(x)
     return write
+
+def out_every(n, f):
+    outs = []
+    def write(x):
+        nonlocal outs
+        outs.append(x)
+        if len(outs) == n:
+            f(*outs)
+            outs = []
+    return write
