@@ -1,4 +1,9 @@
 from enum import IntEnum
+DEBUG = False
+
+def log(*args, **kwargs):
+    if DEBUG:
+        print(*args, **kwargs)
 
 class Opcode(IntEnum):
     ADD = 1
@@ -33,7 +38,7 @@ class Instruction:
         self.num_args = self.op.num_args()
         self.modes = [ParamMode(x // 10**n % 10) for n in range(2, 2+self.num_args)]
     def __repr__(self):
-        return f"<Instruction {repr(self.op)} Mode {self.modes}>"
+        return f"<Instruction {repr(self.op)}>"
 
 
 class InvalidInstruction(Exception):
@@ -91,6 +96,7 @@ class Computer:
         i = Instruction(self.memory[self.ip])
        # print(self.memory[self.ip], i)
         #print(list(self.get_params(i)))
+        log(f"[ip: {self.ip}] => {self.memory[self.ip]} {i} PARAMS: {list(self.get_params(i))}")
         if i.op == Opcode.ADD:
             a, b, dest = self.get_params(i)
             self.write(dest, self.value_of(*a) + self.value_of(*b))
