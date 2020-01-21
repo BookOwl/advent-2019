@@ -80,6 +80,12 @@ class Computer:
         else:
             return addr
 
+    def get_write_addr(self, addr):
+        addr, mode = addr
+        if mode == ParamMode.Relative:
+            addr += self.rel_base
+        return addr
+
     def write(self, addr, value):
         addr, mode = addr
         if mode == ParamMode.Relative:
@@ -94,20 +100,24 @@ class Computer:
     def step(self):
         self.outputting = False
         i = Instruction(self.memory[self.ip])
-       # print(self.memory[self.ip], i)
+        #print(self.memory[self.ip], i)
         #print(list(self.get_params(i)))
         log(f"[ip: {self.ip}] => {self.memory[self.ip]} {i} PARAMS: {list(self.get_params(i))}")
         if i.op == Opcode.ADD:
             a, b, dest = self.get_params(i)
+            log(f"{self.value_of(*a)} + {self.value_of(*b)} => mem[{self.get_write_addr(dest)}]")
             self.write(dest, self.value_of(*a) + self.value_of(*b))
         elif i.op == Opcode.MUL:
             a, b, dest = self.get_params(i)
+            log(f"{self.value_of(*a)} * {self.value_of(*b)} => mem[{self.get_write_addr(dest)}]")
             self.write(dest, self.value_of(*a) * self.value_of(*b))
         elif i.op == Opcode.LT:
             a, b, dest = self.get_params(i)
+            log(f"{self.value_of(*a)} < {self.value_of(*b)} => mem[{self.get_write_addr(dest)}]")
             self.write(dest, int(self.value_of(*a) < self.value_of(*b)))
         elif i.op == Opcode.EQ:
             a, b, dest = self.get_params(i)
+            log(f"{self.value_of(*a)} == {self.value_of(*b)} => mem[{self.get_write_addr(dest)}]")
             self.write(dest, int(self.value_of(*a) == self.value_of(*b)))
         elif i.op == Opcode.REL:
             a = next(self.get_params(i))
@@ -127,6 +137,7 @@ class Computer:
             self.write(dest, int(self.in_("> ")))
         elif i.op == Opcode.OUTPUT:
             a, *_ = self.get_params(i)
+
             self.outputting = True
             self.out(self.value_of(*a))
         elif i.op == Opcode.HALT:
